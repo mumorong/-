@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>농산물 필터링</title>
+  <title>일하기 싫어서 만든거</title>
 
   <!-- PWA 대응 -->
   <link rel="manifest" href="./manifest.json">
@@ -88,7 +88,7 @@
 </head>
 <body>
 
-<h2>농산물 기록 앱</h2>
+<h2>일하기 싫어서 만든거</h2>
 
 <!-- 입력 폼 -->
 <input type="text" id="hiroshi" placeholder="히로시 (예: 18)" />
@@ -100,10 +100,10 @@
 
 <!-- 필터 -->
 <select id="hiroshiFilter" onchange="filterTable()">
-  <option value="">히로시 필터</option>
+  <option value="">히로시 전체</option>
 </select>
 <select id="typeFilter" onchange="filterTable()">
-  <option value="">과수 필터</option>
+  <option value="">과수 전체</option>
 </select>
 
 <!-- 표 -->
@@ -213,8 +213,8 @@
     const uniqueH = [...new Set(data.map(d => d.hiroshi))];
     const uniqueT = [...new Set(data.map(d => d.type))];
 
-    hSelect.innerHTML = '<option value="">히로시 필터</option>';
-    tSelect.innerHTML = '<option value="">과수 필터</option>';
+    hSelect.innerHTML = '<option value="">히로시 전체</option>';
+    tSelect.innerHTML = '<option value="">과수 전체체</option>';
 
     uniqueH.forEach(h => {
       const opt = document.createElement("option");
