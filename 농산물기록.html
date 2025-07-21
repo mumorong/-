@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>농산물 필터링</title>
+
+  <!-- PWA 대응 -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="농산물앱" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 15px;
+      margin: 0;
+      background: #f9f9f9;
+      font-size: 16px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    input, select, button {
+      width: 100%;
+      margin: 5px 0;
+      padding: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #eaeaea;
+    }
+
+    #total {
+      margin-top: 10px;
+      font-weight: bold;
+      text-align: right;
+    }
+
+    .danger {
+      background-color: #d9534f;
+    }
+
+    .danger:hover {
+      background-color: #c9302c;
+    }
+
+    @media (max-width: 400px) {
+      th, td {
+        font-size: 13px;
+        padding: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h2>농산물 기록 앱</h2>
+
+<!-- 입력 폼 -->
+<input type="text" id="hiroshi" placeholder="히로시 (예: 18)" />
+<input type="text" id="name" placeholder="이름 (예: 홍길동)" />
+<input type="text" id="type" placeholder="과수 (예: 14내)" />
+<input type="number" id="count" placeholder="갯수 (예: 24)" />
+<button onclick="addRow()">➕ 추가</button>
+<button class="danger" onclick="clearAll()">🧹 전체 삭제</button>
+
+<!-- 필터 -->
+<select id="hiroshiFilter" onchange="filterTable()">
+  <option value="">히로시 필터</option>
+</select>
+<select id="typeFilter" onchange="filterTable()">
+  <option value="">과수 필터</option>
+</select>
+
+<!-- 표 -->
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>히로시</th>
+      <th>이름</th>
+      <th>과수</th>
+      <th>갯수</th>
+      <th>삭제</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- 합계 -->
+<div id="total">총 갯수: 0개</div>
+
+<script>
+  let data = [];
+
+  // 저장 및 불러오기
+  function saveData() {
+    localStorage.setItem('farmData', JSON.stringify(data));
+  }
+
+  function loadData() {
+    const saved = localStorage.getItem('farmData');
+    if (saved) {
+      data = JSON.parse(saved);
+    }
+  }
+
+  // 행 추가
+  function addRow() {
+    const h = document.getElementById("hiroshi").value.trim();
+    const n = document.getElementById("name").value.trim();
+    const t = document.getElementById("type").value.trim();
+    const c = parseInt(document.getElementById("count").value);
+
+    if (!h || !n || !t || isNaN(c)) {
+      alert("모든 값을 정확히 입력해주세요.");
+      return;
+    }
+
+    const row = {
+      id: Date.now(),
+      hiroshi: h,
+      name: n,
+      type: t,
+      count: c
+    };
+
+    data.push(row);
+    saveData();
+    updateTable();
+    updateFilters();
+
+    document.getElementById("hiroshi").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("type").value = "";
+    document.getElementById("count").value = "";
+  }
+
+  // 테이블 갱신
+  function updateTable() {
+    // 히로시 오름차순 정렬
+    data.sort((a, b) => {
+      const ah = isNaN(a.hiroshi) ? a.hiroshi : parseInt(a.hiroshi);
+      const bh = isNaN(b.hiroshi) ? b.hiroshi : parseInt(b.hiroshi);
+      return ah > bh ? 1 : ah < bh ? -1 : 0;
+    });
+
+    const tbody = document.querySelector("#dataTable tbody");
+    tbody.innerHTML = "";
+
+    const hFilter = document.getElementById("hiroshiFilter").value;
+    const tFilter = document.getElementById("typeFilter").value;
+
+    let total = 0;
+
+    data.forEach(row => {
+      if ((hFilter && row.hiroshi !== hFilter)) return;
+      if ((tFilter && row.type !== tFilter)) return;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.hiroshi}</td>
+        <td>${row.name}</td>
+        <td>${row.type}</td>
+        <td>${row.count}</td>
+        <td><button onclick="deleteRow(${row.id})">🗑</button></td>
+      `;
+      tbody.appendChild(tr);
+      total += row.count;
+    });
+
+    document.getElementById("total").innerText = `총 갯수: ${total}개`;
+  }
+
+  // 필터 옵션 갱신
+  function updateFilters() {
+    const hSelect = document.getElementById("hiroshiFilter");
+    const tSelect = document.getElementById("typeFilter");
+
+    const uniqueH = [...new Set(data.map(d => d.hiroshi))];
+    const uniqueT = [...new Set(data.map(d => d.type))];
+
+    hSelect.innerHTML = '<option value="">히로시 필터</option>';
+    tSelect.innerHTML = '<option value="">과수 필터</option>';
+
+    uniqueH.forEach(h => {
+      const opt = document.createElement("option");
+      opt.value = h;
+      opt.textContent = h;
+      hSelect.appendChild(opt);
+    });
+
+    uniqueT.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      tSelect.appendChild(opt);
+    });
+  }
+
+  function filterTable() {
+    updateTable();
+  }
+
+  // 행 삭제
+  function deleteRow(id) {
+    id = Number(id); // 문자열로 들어올 수 있음
+    if (confirm("정말 이 항목을 삭제하시겠습니까?")) {
+      const index = data.findIndex(item => item.id === id);
+      if (index !== -1) {
+        data.splice(index, 1);
+        saveData();
+        updateTable();
+        updateFilters();
+      }
+    }
+  }
+
+  // 전체 삭제
+  function clearAll() {
+    if (confirm("모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+      data = [];
+      localStorage.removeItem('farmData');
+      updateTable();
+      updateFilters();
+    }
+  }
+
+  // 초기 로딩
+  window.onload = function () {
+    loadData();
+    updateTable();
+    updateFilters();
+  };
+</script>
+
+</body>
+</html>
