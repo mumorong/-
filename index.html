@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>일하기 싫어서 만든거</title>
 
   <!-- PWA 대응 -->
@@ -14,258 +13,208 @@
 
 
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 15px;
-      margin: 0;
-      background: #f9f9f9;
-      font-size: 16px;
-    }
-
-    h2 {
-      font-size: 20px;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-
-    input, select, button {
-      width: 100%;
-      margin: 5px 0;
-      padding: 10px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      font-size: 14px;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-
-    th {
-      background: #eaeaea;
-    }
-
-    #total {
-      margin-top: 10px;
-      font-weight: bold;
-      text-align: right;
-    }
-
-    .danger {
-      background-color: #d9534f;
-    }
-
-    .danger:hover {
-      background-color: #c9302c;
-    }
-
-    @media (max-width: 400px) {
-      th, td {
-        font-size: 13px;
-        padding: 6px;
-      }
-    }
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    input, select, button { margin: 5px; padding: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #eee; }
+    .filter-group, .goal-group { margin-top: 20px; }
   </style>
 </head>
 <body>
+  <h2>일하기 싫어서 만든거</h2>
 
-<h2>일하기 싫어서 만든거</h2>
+  <!-- 입력 폼 -->
+  <div>
+    <input id="hiroshiInput" placeholder="히로시" />
+    <input id="nameInput" placeholder="이름" />
+    <input id="fruitInput" placeholder="과수" />
+    <input id="countInput" type="number" placeholder="수량" />
+    <button onclick="addRow()">추가</button>
+    <button onclick="clearAll()">전체 삭제</button>
+  </div>
 
-<!-- 입력 폼 -->
-<input type="text" id="hiroshi" placeholder="히로시 (예: 18)" />
-<input type="text" id="name" placeholder="이름 (예: 홍길동)" />
-<input type="text" id="type" placeholder="과수 (예: 14내)" />
-<input type="number" id="count" placeholder="갯수 (예: 24)" />
-<button onclick="addRow()">➕ 추가</button>
-<button class="danger" onclick="clearAll()">🧹 전체 삭제</button>
+  <!-- 필터 -->
+  <div class="filter-group">
+    <label>히로시 필터: </label>
+    <select id="filterHiroshi" onchange="renderTable()">
+      <option value="">전체</option>
+    </select>
+    <label>과수 필터: </label>
+    <select id="filterFruit" onchange="renderTable()">
+      <option value="">전체</option>
+    </select>
+  </div>
 
-<!-- 필터 -->
-<select id="hiroshiFilter" onchange="filterTable()">
-  <option value="">히로시 전체</option>
-</select>
-<select id="typeFilter" onchange="filterTable()">
-  <option value="">과수 전체</option>
-</select>
+  <!-- 데이터 테이블 -->
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>히로시</th>
+        <th>이름</th>
+        <th>과수</th>
+        <th>수량</th>
+        <th>삭제</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<!-- 표 -->
-<table id="dataTable">
-  <thead>
-    <tr>
-      <th>히로시</th>
-      <th>이름</th>
-      <th>과수</th>
-      <th>갯수</th>
-      <th>삭제</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <!-- 총합 -->
+  <p id="totalCount">총합: 0개</p>
 
-<!-- 합계 -->
-<div id="total">총 갯수: 0개</div>
+  <!-- 히로시별 목표 수량 설정 -->
+  <div class="goal-group">
+    <h3>히로시 목표 수량 설정</h3>
+    <input id="goalHiroshi" placeholder="히로시 (예: 18)" />
+    <input id="goalCount" type="number" placeholder="목표 수량 (예: 100)" />
+    <button onclick="setGoal()">🎯 목표 설정</button>
 
-<script>
-  let data = [];
+    <table id="goalTable">
+      <thead>
+        <tr>
+          <th>히로시</th>
+          <th>목표</th>
+          <th>현재 수량</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  // 저장 및 불러오기
-  function saveData() {
-    localStorage.setItem('farmData', JSON.stringify(data));
-  }
+  <script>
+    let data = [];
+    let goals = {};
 
-  function loadData() {
-    const saved = localStorage.getItem('farmData');
-    if (saved) {
-      data = JSON.parse(saved);
+    function saveData() {
+      localStorage.setItem("hiroshiData", JSON.stringify(data));
+      localStorage.setItem("hiroshiGoals", JSON.stringify(goals));
     }
-  }
 
-  // 행 추가
-  function addRow() {
-    const h = document.getElementById("hiroshi").value.trim();
-    const n = document.getElementById("name").value.trim();
-    const t = document.getElementById("type").value.trim();
-    const c = parseInt(document.getElementById("count").value);
-
-    if (!h || !n || !t || isNaN(c)) {
-      alert("모든 값을 정확히 입력해주세요.");
-      return;
+    function loadData() {
+      const saved = localStorage.getItem("hiroshiData");
+      const savedGoals = localStorage.getItem("hiroshiGoals");
+      if (saved) data = JSON.parse(saved);
+      if (savedGoals) goals = JSON.parse(savedGoals);
+      renderTable();
+      updateGoalTable();
     }
 
-    const row = {
-      id: Date.now(),
-      hiroshi: h,
-      name: n,
-      type: t,
-      count: c
-    };
+    function addRow() {
+      const h = document.getElementById("hiroshiInput").value.trim();
+      const n = document.getElementById("nameInput").value.trim();
+      const f = document.getElementById("fruitInput").value.trim();
+      const c = parseInt(document.getElementById("countInput").value);
+      if (!h || !n || !f || isNaN(c)) {
+        alert("모든 값을 정확히 입력하세요");
+        return;
+      }
+      data.push({ hiroshi: h, name: n, fruit: f, count: c });
+      saveData();
+      renderTable();
+      updateGoalTable();
+      document.getElementById("hiroshiInput").value = "";
+      document.getElementById("nameInput").value = "";
+      document.getElementById("fruitInput").value = "";
+      document.getElementById("countInput").value = "";
+    }
 
-    data.push(row);
-    saveData();
-    updateTable();
-    updateFilters();
+    function renderTable() {
+      const tbody = document.querySelector("#dataTable tbody");
+      tbody.innerHTML = "";
 
-    document.getElementById("hiroshi").value = "";
-    document.getElementById("name").value = "";
-    document.getElementById("type").value = "";
-    document.getElementById("count").value = "";
-  }
+      const fH = document.getElementById("filterHiroshi").value;
+      const fF = document.getElementById("filterFruit").value;
 
-  // 테이블 갱신
-  function updateTable() {
-    // 히로시 오름차순 정렬
-    data.sort((a, b) => {
-      const ah = isNaN(a.hiroshi) ? a.hiroshi : parseInt(a.hiroshi);
-      const bh = isNaN(b.hiroshi) ? b.hiroshi : parseInt(b.hiroshi);
-      return ah > bh ? 1 : ah < bh ? -1 : 0;
-    });
+      let total = 0;
+      const hSet = new Set(), fSet = new Set();
 
-    const tbody = document.querySelector("#dataTable tbody");
-    tbody.innerHTML = "";
+      data.forEach((d, i) => {
+        hSet.add(d.hiroshi);
+        fSet.add(d.fruit);
+        if ((fH && d.hiroshi !== fH) || (fF && d.fruit !== fF)) return;
+        total += d.count;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${d.hiroshi}</td>
+          <td>${d.name}</td>
+          <td>${d.fruit}</td>
+          <td>${d.count}</td>
+          <td><button onclick="deleteRow(${i})">삭제</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
 
-    const hFilter = document.getElementById("hiroshiFilter").value;
-    const tFilter = document.getElementById("typeFilter").value;
+      // 총합
+      document.getElementById("totalCount").innerText = `총합: ${total}개`;
 
-    let total = 0;
+      // 필터 옵션 갱신
+      const fh = document.getElementById("filterHiroshi");
+      const ff = document.getElementById("filterFruit");
+      fh.innerHTML = `<option value="">전체</option>`;
+      ff.innerHTML = `<option value="">전체</option>`;
+      [...hSet].sort().forEach(v => fh.innerHTML += `<option value="${v}">${v}</option>`);
+      [...fSet].sort().forEach(v => ff.innerHTML += `<option value="${v}">${v}</option>`);
+      fh.value = fH;
+      ff.value = fF;
+    }
 
-    data.forEach(row => {
-      if ((hFilter && row.hiroshi !== hFilter)) return;
-      if ((tFilter && row.type !== tFilter)) return;
+    function deleteRow(i) {
+      data.splice(i, 1);
+      saveData();
+      renderTable();
+      updateGoalTable();
+    }
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${row.hiroshi}</td>
-        <td>${row.name}</td>
-        <td>${row.type}</td>
-        <td>${row.count}</td>
-        <td><button onclick="deleteRow(${row.id})">🗑</button></td>
-      `;
-      tbody.appendChild(tr);
-      total += row.count;
-    });
-
-    document.getElementById("total").innerText = `총 갯수: ${total}개`;
-  }
-
-  // 필터 옵션 갱신
-  function updateFilters() {
-    const hSelect = document.getElementById("hiroshiFilter");
-    const tSelect = document.getElementById("typeFilter");
-
-    const uniqueH = [...new Set(data.map(d => d.hiroshi))];
-    const uniqueT = [...new Set(data.map(d => d.type))];
-
-    hSelect.innerHTML = '<option value="">히로시 전체</option>';
-    tSelect.innerHTML = '<option value="">과수 전체</option>';
-
-    uniqueH.forEach(h => {
-      const opt = document.createElement("option");
-      opt.value = h;
-      opt.textContent = h;
-      hSelect.appendChild(opt);
-    });
-
-    uniqueT.forEach(t => {
-      const opt = document.createElement("option");
-      opt.value = t;
-      opt.textContent = t;
-      tSelect.appendChild(opt);
-    });
-  }
-
-  function filterTable() {
-    updateTable();
-  }
-
-  // 행 삭제
-  function deleteRow(id) {
-    id = Number(id); // 문자열로 들어올 수 있음
-    if (confirm("정말 이 항목을 삭제하시겠습니까?")) {
-      const index = data.findIndex(item => item.id === id);
-      if (index !== -1) {
-        data.splice(index, 1);
+    function clearAll() {
+      if (confirm("정말 모두 삭제하시겠습니까?")) {
+        data = [];
         saveData();
-        updateTable();
-        updateFilters();
+        renderTable();
+        updateGoalTable();
       }
     }
-  }
 
-  // 전체 삭제
-  function clearAll() {
-    if (confirm("모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
-      data = [];
-      localStorage.removeItem('farmData');
-      updateTable();
-      updateFilters();
+    function setGoal() {
+      const h = document.getElementById("goalHiroshi").value.trim();
+      const c = parseInt(document.getElementById("goalCount").value);
+      if (!h || isNaN(c)) {
+        alert("히로시와 목표 수량을 정확히 입력해주세요.");
+        return;
+      }
+      goals[h] = c;
+      saveData();
+      updateGoalTable();
+      document.getElementById("goalHiroshi").value = "";
+      document.getElementById("goalCount").value = "";
     }
-  }
 
-  // 초기 로딩
-  window.onload = function () {
-    loadData();
-    updateTable();
-    updateFilters();
-  };
-</script>
+    function updateGoalTable() {
+      const tbody = document.querySelector("#goalTable tbody");
+      tbody.innerHTML = "";
 
+      Object.keys(goals).forEach(h => {
+        const goal = goals[h];
+        const current = data
+          .filter(d => d.hiroshi === h)
+          .reduce((sum, d) => sum + d.count, 0);
+
+        const diff = goal - current;
+        const status = diff > 0 ? `❌ ${diff}개 부족` : `✅ 충족`;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${h}</td>
+          <td>${goal}</td>
+          <td>${current}</td>
+          <td>${status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.onload = loadData;
+  </script>
 </body>
 </html>
