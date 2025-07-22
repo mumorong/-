@@ -1,179 +1,215 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>농산물 품종 기록 앱</title>
+  <meta charset="UTF-8">
+  <title>농산물 필터링 앱</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    h2 { margin-top: 30px; }
-    .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-    .form-row input { flex: 1 1 45%; padding: 6px; font-size: 1rem; }
-    button { padding: 6px 12px; font-size: 1rem; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #aaa; padding: 6px; text-align: center; }
-    .delete-btn { color: red; cursor: pointer; }
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 5px;
+      text-align: center;
+    }
+    input, button {
+      margin: 5px 3px;
+      padding: 6px;
+    }
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .summary {
+      font-weight: bold;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-  <h1>농산물 수량 기록 앱</h1>
 
-  <h2>데이터 입력</h2>
-  <div class="form-row">
-    <input id="name" placeholder="이름" />
-    <input id="hiroshi" placeholder="히로시 (예: 18)" />
-    <input id="fruit" placeholder="과수 (예: 14내)" />
-    <input id="count" type="number" placeholder="수량 (예: 50)" />
-  </div>
-  <button onclick="addData()">추가</button>
+<h2>농산물 입력</h2>
+<div class="form-row">
+  <input id="hiroshi" placeholder="히로시 (예: H)" />
+  <input id="name" placeholder="이름 (예: 김철수)" />
+  <input id="fruit" placeholder="과수 (예: 14내)" />
+  <input id="count" type="number" placeholder="갯수 (예: 10)" />
+  <button onclick="addEntry()">추가</button>
+</div>
 
-  <h2>데이터 목록</h2>
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>이름</th>
-        <th>히로시</th>
-        <th>과수</th>
-        <th>수량</th>
-        <th>삭제</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<h3>필터</h3>
+<div class="form-row">
+  <input id="filterHiroshi" placeholder="히로시 필터" oninput="updateTable()" />
+  <input id="filterFruit" placeholder="과수 필터" oninput="updateTable()" />
+</div>
 
-  <h2>히로시별 목표 설정</h2>
-  <div class="form-row">
-    <input id="goalHiroshi" placeholder="히로시 (예: 18)" />
-    <input id="goalFruit" placeholder="과수 (예: 14내)" />
-    <input id="goalCount" type="number" placeholder="목표 수량 (예: 100)" />
-  </div>
-  <button onclick="setGoal()">목표 설정</button>
+<div class="summary" id="totalCount">총 갯수: 0개</div>
 
-  <h2>목표 현황</h2>
-  <table id="goalTable">
-    <thead>
-      <tr>
-        <th>히로시</th>
-        <th>과수</th>
-        <th>목표</th>
-        <th>현재 수량</th>
-        <th>상태</th>
-        <th>삭제</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>히로시</th>
+      <th>이름</th>
+      <th>과수</th>
+      <th>갯수</th>
+      <th>삭제</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-  <script>
-    let data = JSON.parse(localStorage.getItem("data") || "[]");
-    let goals = JSON.parse(localStorage.getItem("goals") || "{}");
+<h2>히로시별 과수 목표 설정</h2>
+<div class="form-row">
+  <input id="goalHiroshi" placeholder="히로시" />
+  <input id="goalFruit" placeholder="과수" />
+  <input id="goalCount" type="number" placeholder="목표 수량" />
+  <button onclick="setGoal()">설정</button>
+</div>
 
-    function saveData() {
-      localStorage.setItem("data", JSON.stringify(data));
-      localStorage.setItem("goals", JSON.stringify(goals));
+<table id="goalTable">
+  <thead>
+    <tr>
+      <th>히로시</th>
+      <th>과수</th>
+      <th>목표</th>
+      <th>현재 수량</th>
+      <th>상태</th>
+      <th>삭제</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  let data = JSON.parse(localStorage.getItem("fruitData") || "[]");
+  let goals = JSON.parse(localStorage.getItem("fruitGoals") || "{}");
+
+  function saveData() {
+    localStorage.setItem("fruitData", JSON.stringify(data));
+    localStorage.setItem("fruitGoals", JSON.stringify(goals));
+  }
+
+  function addEntry() {
+    const h = document.getElementById("hiroshi").value.trim();
+    const n = document.getElementById("name").value.trim();
+    const f = document.getElementById("fruit").value.trim();
+    const c = parseInt(document.getElementById("count").value);
+    if (!h || !n || !f || isNaN(c)) {
+      alert("모든 필드를 올바르게 입력해주세요.");
+      return;
     }
+    data.push({ hiroshi: h, name: n, fruit: f, count: c });
+    saveData();
+    document.getElementById("hiroshi").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("fruit").value = "";
+    document.getElementById("count").value = "";
+    updateTable();
+    updateGoalTable();
+  }
 
-    function addData() {
-      const name = document.getElementById("name").value.trim();
-      const hiroshi = document.getElementById("hiroshi").value.trim();
-      const fruit = document.getElementById("fruit").value.trim();
-      const count = parseInt(document.getElementById("count").value);
-
-      if (!name || !hiroshi || !fruit || isNaN(count)) {
-        alert("모든 항목을 정확히 입력하세요.");
-        return;
-      }
-
-      data.push({ name, hiroshi, fruit, count });
+  function deleteEntry(index) {
+    if (confirm("정말 이 항목을 삭제하시겠습니까?")) {
+      data.splice(index, 1);
       saveData();
       updateTable();
-
-      document.getElementById("name").value = "";
-      document.getElementById("hiroshi").value = "";
-      document.getElementById("fruit").value = "";
-      document.getElementById("count").value = "";
+      updateGoalTable();
     }
+  }
 
-    function deleteRow(index) {
-      if (confirm("정말 이 행을 삭제하시겠습니까?")) {
-        data.splice(index, 1);
-        saveData();
-        updateTable();
-      }
+  function updateTable() {
+    const tbody = document.querySelector("#dataTable tbody");
+    tbody.innerHTML = "";
+
+    const filterH = document.getElementById("filterHiroshi").value.trim();
+    const filterF = document.getElementById("filterFruit").value.trim();
+    let total = 0;
+
+    data.forEach((entry, i) => {
+      if ((filterH && !entry.hiroshi.includes(filterH)) ||
+          (filterF && !entry.fruit.includes(filterF))) return;
+
+      total += entry.count;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${entry.hiroshi}</td>
+        <td>${entry.name}</td>
+        <td>${entry.fruit}</td>
+        <td>${entry.count}</td>
+        <td><button onclick="deleteEntry(${i})">삭제</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("totalCount").innerText = `총 갯수: ${total}개`;
+  }
+
+  function setGoal() {
+    const h = document.getElementById("goalHiroshi").value.trim();
+    const f = document.getElementById("goalFruit").value.trim();
+    const c = parseInt(document.getElementById("goalCount").value);
+    if (!h || !f || isNaN(c)) {
+      alert("히로시, 과수, 목표 수량을 모두 입력해주세요.");
+      return;
     }
+    const key = `${h}|${f}`;
+    goals[key] = c;
+    saveData();
+    document.getElementById("goalHiroshi").value = "";
+    document.getElementById("goalFruit").value = "";
+    document.getElementById("goalCount").value = "";
+    updateGoalTable();
+  }
 
-    function setGoal() {
-      const h = document.getElementById("goalHiroshi").value.trim();
-      const f = document.getElementById("goalFruit").value.trim();
-      const c = parseInt(document.getElementById("goalCount").value);
-      if (!h || !f || isNaN(c)) {
-        alert("히로시, 과수, 목표 수량을 모두 입력해주세요.");
-        return;
-      }
-      const key = `${h}|${f}`;
-      goals[key] = c;
+  function deleteGoal(key) {
+    if (confirm("정말 이 목표를 삭제하시겠습니까?")) {
+      delete goals[key];
       saveData();
       updateGoalTable();
-      document.getElementById("goalHiroshi").value = "";
-      document.getElementById("goalFruit").value = "";
-      document.getElementById("goalCount").value = "";
     }
+  }
 
-    function deleteGoal(h, f) {
-      const key = `${h}|${f}`;
-      if (confirm(`히로시 ${h}, 과수 ${f}의 목표를 삭제하시겠습니까?`)) {
-        delete goals[key];
-        saveData();
-        updateGoalTable();
-      }
-    }
+  function updateGoalTable() {
+    const tbody = document.querySelector("#goalTable tbody");
+    tbody.innerHTML = "";
 
-    function updateTable() {
-      const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
-      data.forEach((row, i) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${row.name}</td>
-          <td>${row.hiroshi}</td>
-          <td>${row.fruit}</td>
-          <td>${row.count}</td>
-          <td><span class="delete-btn" onclick="deleteRow(${i})">삭제</span></td>
-        `;
-        tbody.appendChild(tr);
-      });
-      updateGoalTable();
-    }
+    Object.keys(goals).forEach(key => {
+      const [h, f] = key.split("|");
+      const goal = goals[key];
+      const current = data
+        .filter(d => d.hiroshi === h && d.fruit === f)
+        .reduce((sum, d) => sum + d.count, 0);
 
-    function updateGoalTable() {
-      const tbody = document.querySelector("#goalTable tbody");
-      tbody.innerHTML = "";
+      const diff = goal - current;
+      const status = diff > 0 ? `❌ ${diff}개 부족` : `✅ 충족`;
 
-      Object.keys(goals).forEach(key => {
-        const [h, f] = key.split("|");
-        const goal = goals[key];
-        const current = data
-          .filter(d => d.hiroshi === h && d.fruit === f)
-          .reduce((sum, d) => sum + d.count, 0);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${h}</td>
+        <td>${f}</td>
+        <td>${goal}</td>
+        <td>${current}</td>
+        <td>${status}</td>
+        <td><button onclick="deleteGoal('${key}')">삭제</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-        const diff = goal - current;
-        const status = diff > 0 ? `❌ ${diff}개 부족` : `✅ 충족`;
+  updateTable();
+  updateGoalTable();
+</script>
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${h}</td>
-          <td>${f}</td>
-          <td>${goal}</td>
-          <td>${current}</td>
-          <td>${status}</td>
-          <td><span class="delete-btn" onclick="deleteGoal('${h}', '${f}')">삭제</span></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // 초기 로딩
-    updateTable();
-  </script>
 </body>
 </html>
