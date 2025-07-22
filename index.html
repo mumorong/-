@@ -4,11 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>농산물 품종 기록 앱</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="농산물앱">
   <style>
     body { font-family: sans-serif; padding: 20px; }
     h2 { margin-top: 30px; }
@@ -63,6 +58,7 @@
         <th>목표</th>
         <th>현재 수량</th>
         <th>상태</th>
+        <th>삭제</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -106,23 +102,6 @@
       }
     }
 
-    function updateTable() {
-      const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
-      data.forEach((row, i) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${row.name}</td>
-          <td>${row.hiroshi}</td>
-          <td>${row.fruit}</td>
-          <td>${row.count}</td>
-          <td><span class="delete-btn" onclick="deleteRow(${i})">삭제</span></td>
-        `;
-        tbody.appendChild(tr);
-      });
-      updateGoalTable();
-    }
-
     function setGoal() {
       const h = document.getElementById("goalHiroshi").value.trim();
       const f = document.getElementById("goalFruit").value.trim();
@@ -138,6 +117,32 @@
       document.getElementById("goalHiroshi").value = "";
       document.getElementById("goalFruit").value = "";
       document.getElementById("goalCount").value = "";
+    }
+
+    function deleteGoal(h, f) {
+      const key = `${h}|${f}`;
+      if (confirm(`히로시 ${h}, 과수 ${f}의 목표를 삭제하시겠습니까?`)) {
+        delete goals[key];
+        saveData();
+        updateGoalTable();
+      }
+    }
+
+    function updateTable() {
+      const tbody = document.querySelector("#dataTable tbody");
+      tbody.innerHTML = "";
+      data.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.name}</td>
+          <td>${row.hiroshi}</td>
+          <td>${row.fruit}</td>
+          <td>${row.count}</td>
+          <td><span class="delete-btn" onclick="deleteRow(${i})">삭제</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      updateGoalTable();
     }
 
     function updateGoalTable() {
@@ -161,14 +166,14 @@
           <td>${goal}</td>
           <td>${current}</td>
           <td>${status}</td>
+          <td><span class="delete-btn" onclick="deleteGoal('${h}', '${f}')">삭제</span></td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    // 최초 실행 시 테이블 업데이트
+    // 초기 로딩
     updateTable();
   </script>
 </body>
 </html>
-
