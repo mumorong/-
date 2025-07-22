@@ -12,17 +12,82 @@
   <meta name="apple-mobile-web-app-title" content="농산물앱">
 
 
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
-    input, select, button { margin: 5px; padding: 6px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background-color: #eee; }
-    .filter-group, .goal-group { margin-top: 20px; }
+    <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 15px;
+      margin: 0;
+      background: #f9f9f9;
+      font-size: 16px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    input, select, button {
+      width: 100%;
+      margin: 5px 0;
+      padding: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #eaeaea;
+    }
+
+    #total {
+      margin-top: 10px;
+      font-weight: bold;
+      text-align: right;
+    }
+
+    .danger {
+      background-color: #d9534f;
+    }
+
+    .danger:hover {
+      background-color: #c9302c;
+    }
+
+    @media (max-width: 400px) {
+      th, td {
+        font-size: 13px;
+        padding: 6px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h2>일하기 싫어서 만든거</h2>
+
+<h2>일하기 싫어서 만든거</h2>
 
   <!-- 입력 폼 -->
   <div>
