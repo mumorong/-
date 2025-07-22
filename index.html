@@ -11,27 +11,33 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="농산물앱">
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
+  <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 15px;
+      padding: 10px;
       margin: 0;
       background: #f9f9f9;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     h2 {
-      font-size: 20px;
-      margin-bottom: 10px;
+      font-size: 18px;
       text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
     }
 
     input, select, button {
-      width: 100%;
-      margin: 5px 0;
-      padding: 10px;
-      font-size: 16px;
+      padding: 8px;
+      font-size: 15px;
+      flex: 1;
       box-sizing: border-box;
     }
 
@@ -49,13 +55,13 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
-      font-size: 14px;
+      margin-top: 10px;
+      font-size: 13px;
     }
 
     th, td {
       border: 1px solid #ccc;
-      padding: 8px;
+      padding: 6px;
       text-align: center;
     }
 
@@ -63,24 +69,26 @@
       background: #eaeaea;
     }
 
-    #total {
-      margin-top: 10px;
+    #totalCount {
+      margin-top: 8px;
       font-weight: bold;
       text-align: right;
     }
 
-    .danger {
-      background-color: #d9534f;
-    }
-
-    .danger:hover {
-      background-color: #c9302c;
+    .goal-group h3 {
+      font-size: 16px;
+      margin-top: 20px;
     }
 
     @media (max-width: 400px) {
-      th, td {
-        font-size: 13px;
+      input, select, button {
+        font-size: 14px;
         padding: 6px;
+      }
+
+      th, td {
+        font-size: 12px;
+        padding: 5px;
       }
     }
   </style>
@@ -89,197 +97,200 @@
 
 <h2>일하기 싫어서 만든거</h2>
 
-  <!-- 입력 폼 -->
-  <div>
-    <input id="hiroshiInput" placeholder="히로시" />
-    <input id="nameInput" placeholder="이름" />
-    <input id="fruitInput" placeholder="과수" />
-    <input id="countInput" type="number" placeholder="수량" />
-    <button onclick="addRow()">추가</button>
-    <button onclick="clearAll()">전체 삭제</button>
-  </div>
+<!-- 입력 폼 -->
+<div class="form-row">
+  <input id="hiroshiInput" placeholder="히로시" />
+  <input id="nameInput" placeholder="이름" />
+</div>
+<div class="form-row">
+  <input id="fruitInput" placeholder="과수" />
+  <input id="countInput" type="number" placeholder="수량" />
+</div>
+<div class="form-row">
+  <button onclick="addRow()">추가</button>
+  <button onclick="clearAll()" style="background-color:#d9534f;">전체 삭제</button>
+</div>
 
-  <!-- 필터 -->
-  <div class="filter-group">
-    <label>히로시 필터: </label>
-    <select id="filterHiroshi" onchange="renderTable()">
-      <option value="">전체</option>
-    </select>
-    <label>과수 필터: </label>
-    <select id="filterFruit" onchange="renderTable()">
-      <option value="">전체</option>
-    </select>
-  </div>
+<!-- 필터 -->
+<div class="form-row">
+  <select id="filterHiroshi" onchange="renderTable()">
+    <option value="">히로시 전체</option>
+  </select>
+  <select id="filterFruit" onchange="renderTable()">
+    <option value="">과수 전체</option>
+  </select>
+</div>
 
-  <!-- 데이터 테이블 -->
-  <table id="dataTable">
+<!-- 데이터 테이블 -->
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>히로시</th>
+      <th>이름</th>
+      <th>과수</th>
+      <th>수량</th>
+      <th>삭제</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- 총합 -->
+<p id="totalCount">총합: 0개</p>
+
+<!-- 히로시별 목표 수량 설정 -->
+<div class="goal-group">
+  <h3>히로시 목표 수량 설정</h3>
+  <div class="form-row">
+    <input id="goalHiroshi" placeholder="히로시 (예: 18)" />
+    <input id="goalCount" type="number" placeholder="목표 수량 (예: 100)" />
+  </div>
+  <div class="form-row">
+    <button onclick="setGoal()">🎯 목표 설정</button>
+  </div>
+  <table id="goalTable">
     <thead>
       <tr>
         <th>히로시</th>
-        <th>이름</th>
-        <th>과수</th>
-        <th>수량</th>
-        <th>삭제</th>
+        <th>목표</th>
+        <th>현재 수량</th>
+        <th>상태</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
+</div>
 
-  <!-- 총합 -->
-  <p id="totalCount">총합: 0개</p>
+<script>
+  let data = [];
+  let goals = {};
 
-  <!-- 히로시별 목표 수량 설정 -->
-  <div class="goal-group">
-    <h3>히로시 목표 수량 설정</h3>
-    <input id="goalHiroshi" placeholder="히로시 (예: 18)" />
-    <input id="goalCount" type="number" placeholder="목표 수량 (예: 100)" />
-    <button onclick="setGoal()">🎯 목표 설정</button>
+  function saveData() {
+    localStorage.setItem("hiroshiData", JSON.stringify(data));
+    localStorage.setItem("hiroshiGoals", JSON.stringify(goals));
+  }
 
-    <table id="goalTable">
-      <thead>
-        <tr>
-          <th>히로시</th>
-          <th>목표</th>
-          <th>현재 수량</th>
-          <th>상태</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  function loadData() {
+    const saved = localStorage.getItem("hiroshiData");
+    const savedGoals = localStorage.getItem("hiroshiGoals");
+    if (saved) data = JSON.parse(saved);
+    if (savedGoals) goals = JSON.parse(savedGoals);
+    renderTable();
+    updateGoalTable();
+  }
 
-  <script>
-    let data = [];
-    let goals = {};
-
-    function saveData() {
-      localStorage.setItem("hiroshiData", JSON.stringify(data));
-      localStorage.setItem("hiroshiGoals", JSON.stringify(goals));
+  function addRow() {
+    const h = document.getElementById("hiroshiInput").value.trim();
+    const n = document.getElementById("nameInput").value.trim();
+    const f = document.getElementById("fruitInput").value.trim();
+    const c = parseInt(document.getElementById("countInput").value);
+    if (!h || !n || !f || isNaN(c)) {
+      alert("모든 값을 정확히 입력하세요");
+      return;
     }
+    data.push({ hiroshi: h, name: n, fruit: f, count: c });
+    saveData();
+    renderTable();
+    updateGoalTable();
+    document.getElementById("hiroshiInput").value = "";
+    document.getElementById("nameInput").value = "";
+    document.getElementById("fruitInput").value = "";
+    document.getElementById("countInput").value = "";
+  }
 
-    function loadData() {
-      const saved = localStorage.getItem("hiroshiData");
-      const savedGoals = localStorage.getItem("hiroshiGoals");
-      if (saved) data = JSON.parse(saved);
-      if (savedGoals) goals = JSON.parse(savedGoals);
-      renderTable();
-      updateGoalTable();
-    }
+  function renderTable() {
+    const tbody = document.querySelector("#dataTable tbody");
+    tbody.innerHTML = "";
 
-    function addRow() {
-      const h = document.getElementById("hiroshiInput").value.trim();
-      const n = document.getElementById("nameInput").value.trim();
-      const f = document.getElementById("fruitInput").value.trim();
-      const c = parseInt(document.getElementById("countInput").value);
-      if (!h || !n || !f || isNaN(c)) {
-        alert("모든 값을 정확히 입력하세요");
-        return;
-      }
-      data.push({ hiroshi: h, name: n, fruit: f, count: c });
-      saveData();
-      renderTable();
-      updateGoalTable();
-      document.getElementById("hiroshiInput").value = "";
-      document.getElementById("nameInput").value = "";
-      document.getElementById("fruitInput").value = "";
-      document.getElementById("countInput").value = "";
-    }
+    const fH = document.getElementById("filterHiroshi").value;
+    const fF = document.getElementById("filterFruit").value;
 
-    function renderTable() {
-      const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
+    let total = 0;
+    const hSet = new Set(), fSet = new Set();
 
-      const fH = document.getElementById("filterHiroshi").value;
-      const fF = document.getElementById("filterFruit").value;
+    data.forEach((d, i) => {
+      hSet.add(d.hiroshi);
+      fSet.add(d.fruit);
+      if ((fH && d.hiroshi !== fH) || (fF && d.fruit !== fF)) return;
+      total += d.count;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${d.hiroshi}</td>
+        <td>${d.name}</td>
+        <td>${d.fruit}</td>
+        <td>${d.count}</td>
+        <td><button onclick="deleteRow(${i})">삭제</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
 
-      let total = 0;
-      const hSet = new Set(), fSet = new Set();
+    document.getElementById("totalCount").innerText = `총합: ${total}개`;
 
-      data.forEach((d, i) => {
-        hSet.add(d.hiroshi);
-        fSet.add(d.fruit);
-        if ((fH && d.hiroshi !== fH) || (fF && d.fruit !== fF)) return;
-        total += d.count;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${d.hiroshi}</td>
-          <td>${d.name}</td>
-          <td>${d.fruit}</td>
-          <td>${d.count}</td>
-          <td><button onclick="deleteRow(${i})">삭제</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
+    const fh = document.getElementById("filterHiroshi");
+    const ff = document.getElementById("filterFruit");
+    fh.innerHTML = `<option value="">히로시 전체</option>`;
+    ff.innerHTML = `<option value="">과수 전체</option>`;
+    [...hSet].sort().forEach(v => fh.innerHTML += `<option value="${v}">${v}</option>`);
+    [...fSet].sort().forEach(v => ff.innerHTML += `<option value="${v}">${v}</option>`);
+    fh.value = fH;
+    ff.value = fF;
+  }
 
-      // 총합
-      document.getElementById("totalCount").innerText = `총합: ${total}개`;
+  function deleteRow(i) {
+    data.splice(i, 1);
+    saveData();
+    renderTable();
+    updateGoalTable();
+  }
 
-      // 필터 옵션 갱신
-      const fh = document.getElementById("filterHiroshi");
-      const ff = document.getElementById("filterFruit");
-      fh.innerHTML = `<option value="">전체</option>`;
-      ff.innerHTML = `<option value="">전체</option>`;
-      [...hSet].sort().forEach(v => fh.innerHTML += `<option value="${v}">${v}</option>`);
-      [...fSet].sort().forEach(v => ff.innerHTML += `<option value="${v}">${v}</option>`);
-      fh.value = fH;
-      ff.value = fF;
-    }
-
-    function deleteRow(i) {
-      data.splice(i, 1);
+  function clearAll() {
+    if (confirm("정말 모두 삭제하시겠습니까?")) {
+      data = [];
       saveData();
       renderTable();
       updateGoalTable();
     }
+  }
 
-    function clearAll() {
-      if (confirm("정말 모두 삭제하시겠습니까?")) {
-        data = [];
-        saveData();
-        renderTable();
-        updateGoalTable();
-      }
+  function setGoal() {
+    const h = document.getElementById("goalHiroshi").value.trim();
+    const c = parseInt(document.getElementById("goalCount").value);
+    if (!h || isNaN(c)) {
+      alert("히로시와 목표 수량을 정확히 입력해주세요.");
+      return;
     }
+    goals[h] = c;
+    saveData();
+    updateGoalTable();
+    document.getElementById("goalHiroshi").value = "";
+    document.getElementById("goalCount").value = "";
+  }
 
-    function setGoal() {
-      const h = document.getElementById("goalHiroshi").value.trim();
-      const c = parseInt(document.getElementById("goalCount").value);
-      if (!h || isNaN(c)) {
-        alert("히로시와 목표 수량을 정확히 입력해주세요.");
-        return;
-      }
-      goals[h] = c;
-      saveData();
-      updateGoalTable();
-      document.getElementById("goalHiroshi").value = "";
-      document.getElementById("goalCount").value = "";
-    }
+  function updateGoalTable() {
+    const tbody = document.querySelector("#goalTable tbody");
+    tbody.innerHTML = "";
 
-    function updateGoalTable() {
-      const tbody = document.querySelector("#goalTable tbody");
-      tbody.innerHTML = "";
+    Object.keys(goals).forEach(h => {
+      const goal = goals[h];
+      const current = data
+        .filter(d => d.hiroshi === h)
+        .reduce((sum, d) => sum + d.count, 0);
 
-      Object.keys(goals).forEach(h => {
-        const goal = goals[h];
-        const current = data
-          .filter(d => d.hiroshi === h)
-          .reduce((sum, d) => sum + d.count, 0);
+      const diff = goal - current;
+      const status = diff > 0 ? `❌ ${diff}개 부족` : `✅ 충족`;
 
-        const diff = goal - current;
-        const status = diff > 0 ? `❌ ${diff}개 부족` : `✅ 충족`;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${h}</td>
+        <td>${goal}</td>
+        <td>${current}</td>
+        <td>${status}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${h}</td>
-          <td>${goal}</td>
-          <td>${current}</td>
-          <td>${status}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    window.onload = loadData;
-  </script>
+  window.onload = loadData;
+</script>
 </body>
 </html>
