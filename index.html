@@ -3,32 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>과수 관리 앱</title>
+  <title>농산물 관리 앱</title>
+
+  <!-- PWA 대응 -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="농산물앱">
+
   <style>
-    body { font-family: 'Arial'; margin: 0; padding: 10px; max-width: 390px; background: #f5f5f5; }
-    input, select, button { font-size: 16px; margin: 5px 0; width: 100%; padding: 8px; box-sizing: border-box; }
-    table { width: 100%; border-collapse: collapse; margin: 10px 0; background: white; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-    th { background: #eee; }
-    .btn { padding: 8px; margin-top: 5px; cursor: pointer; font-weight: bold; }
-    .btn-danger { background: #ff6666; color: white; border: none; }
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 10px;
+      background: #f9f9f9;
+    }
+
+    h2, h3 {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+
+    .input-row, .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 8px 0;
+    }
+
+    input[type="text"], input[type="number"] {
+      padding: 5px;
+      font-size: 14px;
+      width: 22%;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 5px 10px;
+      font-size: 14px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 5px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .summary {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 15px;
+    }
+
+    @media (max-width: 400px) {
+      input[type="text"], input[type="number"] {
+        width: 45%;
+      }
+    }
   </style>
 </head>
 <body>
+  <h2>🍎 농산물 기록</h2>
 
-  <h2>📋 품종 데이터 입력</h2>
-  <input type="text" id="hiroshi" placeholder="히로시 (예: H01)" />
-  <input type="text" id="name" placeholder="이름" />
-  <input type="text" id="fruit" placeholder="과수 (예: 14내)" />
-  <input type="number" id="count" placeholder="개수" />
-  <button onclick="addEntry()" class="btn">추가</button>
+  <div class="input-row">
+    <input type="text" id="hiroshi" placeholder="히로시">
+    <input type="text" id="name" placeholder="이름">
+    <input type="text" id="fruit" placeholder="과수">
+    <input type="number" id="amount" placeholder="개수">
+    <button onclick="addRow()">추가</button>
+  </div>
 
-  <h2>🔍 필터</h2>
-  <select id="filterHiroshi" onchange="filterData()"></select>
-  <select id="filterFruit" onchange="filterData()"></select>
+  <div class="filter-row">
+    <input type="text" id="hiroshiFilter" placeholder="히로시 필터">
+    <input type="text" id="fruitFilter" placeholder="과수 필터">
+    <button onclick="applyFilter()">필터</button>
+    <button onclick="resetFilter()">초기화</button>
+  </div>
 
-  <h2>📊 입력 데이터</h2>
-  <div id="totalCount">총 갯수: 0</div>
+  <div class="summary">총 합계: <span id="totalSum">0</span> 개</div>
+
   <table id="dataTable">
     <thead>
       <tr>
@@ -37,143 +105,86 @@
         <th>과수</th>
         <th>개수</th>
         <th>삭제</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <h2>🎯 목표표</h2>
-  <table id="goalTable">
-    <thead>
-      <tr>
-        <th>히로시</th>
-        <th>과수</th>
-        <th>목표</th>
-        <th>실제</th>
-        <th>상태</th>
+        <th>목표삭제</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
   <script>
-    let dataList = [];
-    let goalList = [
-      { hiroshi: "H01", fruit: "14내", goal: 10 },
-      { hiroshi: "H02", fruit: "16내", goal: 10 }
-    ];
+    function addRow() {
+      const h = document.getElementById('hiroshi').value.trim();
+      const n = document.getElementById('name').value.trim();
+      const f = document.getElementById('fruit').value.trim();
+      const a = parseInt(document.getElementById('amount').value.trim());
 
-    function addEntry() {
-      const hiroshi = document.getElementById("hiroshi").value.trim();
-      const name = document.getElementById("name").value.trim();
-      const fruit = document.getElementById("fruit").value.trim();
-      const count = parseInt(document.getElementById("count").value);
+      if (!h || !n || !f || isNaN(a)) return alert('모든 필드를 입력해주세요.');
 
-      if (!hiroshi || !name || !fruit || isNaN(count)) {
-        alert("모든 칸을 올바르게 입력하세요");
-        return;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${h}</td><td>${n}</td><td>${f}</td><td>${a}</td>
+        <td><button onclick="confirmDeleteRow(this)">삭제</button></td>
+        <td><button onclick="confirmDeleteTarget(this)">목표삭제</button></td>
+      `;
+      document.querySelector('#dataTable tbody').appendChild(row);
+      updateTotal();
+    }
+
+    function confirmDeleteRow(btn) {
+      if (confirm('정말 이 행을 삭제하시겠습니까?')) {
+        btn.closest('tr').remove();
+        updateTotal();
       }
-
-      dataList.push({ hiroshi, name, fruit, count });
-      document.getElementById("hiroshi").value = "";
-      document.getElementById("name").value = "";
-      document.getElementById("fruit").value = "";
-      document.getElementById("count").value = "";
-
-      updateTable();
     }
 
-    function deleteEntry(index) {
-      dataList.splice(index, 1);
-      updateTable();
+    function confirmDeleteTarget(btn) {
+      if (confirm('정말 이 목표(행)를 삭제하시겠습니까?')) {
+        btn.closest('tr').remove();
+        updateTotal();
+      }
     }
 
-    function updateTable() {
-      const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
-      let total = 0;
+    function applyFilter() {
+      const hFilter = document.getElementById('hiroshiFilter').value.trim();
+      const fFilter = document.getElementById('fruitFilter').value.trim();
+      let sum = 0;
 
-      dataList.forEach((item, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${item.hiroshi}</td>
-          <td>${item.name}</td>
-          <td>${item.fruit}</td>
-          <td>${item.count}</td>
-          <td><button class="btn btn-danger" onclick="deleteEntry(${index})">삭제</button></td>
-        `;
-        tbody.appendChild(row);
-        total += item.count;
+      document.querySelectorAll('#dataTable tbody tr').forEach(row => {
+        const h = row.cells[0].textContent;
+        const f = row.cells[2].textContent;
+        const a = parseInt(row.cells[3].textContent);
+
+        const hMatch = !hFilter || h.includes(hFilter);
+        const fMatch = !fFilter || f.includes(fFilter);
+
+        if (hMatch && fMatch) {
+          row.style.display = '';
+          sum += a;
+        } else {
+          row.style.display = 'none';
+        }
       });
 
-      document.getElementById("totalCount").textContent = "총 갯수: " + total;
-      updateFilters();
-      updateGoalTable();
+      document.getElementById('totalSum').textContent = sum;
     }
 
-    function updateFilters() {
-      const hSet = new Set(dataList.map(d => d.hiroshi));
-      const fSet = new Set(dataList.map(d => d.fruit));
-
-      const hSelect = document.getElementById("filterHiroshi");
-      const fSelect = document.getElementById("filterFruit");
-
-      hSelect.innerHTML = '<option value="">히로시 전체</option>';
-      fSelect.innerHTML = '<option value="">과수 전체</option>';
-
-      hSet.forEach(v => hSelect.innerHTML += `<option value="${v}">${v}</option>`);
-      fSet.forEach(v => fSelect.innerHTML += `<option value="${v}">${v}</option>`);
+    function resetFilter() {
+      document.getElementById('hiroshiFilter').value = '';
+      document.getElementById('fruitFilter').value = '';
+      document.querySelectorAll('#dataTable tbody tr').forEach(row => row.style.display = '');
+      updateTotal();
     }
 
-    function filterData() {
-      const h = document.getElementById("filterHiroshi").value;
-      const f = document.getElementById("filterFruit").value;
-      const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
-      let total = 0;
-
-      dataList.forEach((item, index) => {
-        if ((h && item.hiroshi !== h) || (f && item.fruit !== f)) return;
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${item.hiroshi}</td>
-          <td>${item.name}</td>
-          <td>${item.fruit}</td>
-          <td>${item.count}</td>
-          <td><button class="btn btn-danger" onclick="deleteEntry(${index})">삭제</button></td>
-        `;
-        tbody.appendChild(row);
-        total += item.count;
+    function updateTotal() {
+      let sum = 0;
+      document.querySelectorAll('#dataTable tbody tr').forEach(row => {
+        if (row.style.display !== 'none') {
+          sum += parseInt(row.cells[3].textContent);
+        }
       });
-
-      document.getElementById("totalCount").textContent = "총 갯수: " + total;
+      document.getElementById('totalSum').textContent = sum;
     }
-
-    function updateGoalTable() {
-      const tbody = document.querySelector("#goalTable tbody");
-      tbody.innerHTML = "";
-
-      goalList.forEach(goal => {
-        const actual = dataList
-          .filter(d => d.hiroshi === goal.hiroshi && d.fruit === goal.fruit)
-          .reduce((sum, d) => sum + d.count, 0);
-        let status = "부족";
-        if (actual === goal.goal) status = "달성";
-        else if (actual > goal.goal) status = "초과";
-
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${goal.hiroshi}</td>
-          <td>${goal.fruit}</td>
-          <td>${goal.goal}</td>
-          <td>${actual}</td>
-          <td>${status}</td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    updateTable();
   </script>
 </body>
 </html>
+
